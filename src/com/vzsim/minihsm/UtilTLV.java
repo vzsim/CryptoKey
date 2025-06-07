@@ -1,4 +1,4 @@
-package vzsim;
+package com.vzsim.minihsm;
 
 public class UtilTLV
 {

@@ -1,4 +1,4 @@
-package vzsim;
+package com.vzsim.minihsm;
 
 import javacard.framework.APDU;
 import javacard.framework.Applet;
