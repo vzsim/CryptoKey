@@ -7,7 +7,7 @@
     <description>Builds the project. </description>
     <target name="dist" description="generate the distribution">
         <tstamp/>
-        <javacard jckit="jc310r20210706_kit">
+        <javacard jckit="../ant-javacard/sdks/jc310r20210706_kit">
             <cap targetsdk="3.0.4" aid="A0:CA:FE:BA:BE" output="CryptoKey.cap" sources="src" version="1.0">
                 <applet class="vzsim.CryptoKey" aid="A0:CA:FE:BA:BE:01"/>
             </cap>
