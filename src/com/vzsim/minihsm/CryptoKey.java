@@ -5,6 +5,7 @@ import javacard.framework.Applet;
 import javacard.framework.ISO7816;
 import javacard.framework.ISOException;
 import javacard.framework.OwnerPIN;
+import javacard.framework.Util;
 
 public class CryptoKey extends Applet implements ISO7816
 {
@@ -12,6 +13,7 @@ public class CryptoKey extends Applet implements ISO7816
 	private static final byte INS_VERIFY                = (byte) 0x20;
     private static final byte INS_CHANGE_REFERENCE_DATA = (byte) 0x25;
 	private static final byte INS_RESET_RETRY_COUNTER   = (byte) 0x2D;
+	private static final byte INS_GET_DATA				= (byte) 0xCA;
 
 	private static final short SW_PIN_TRIES_REMAINING   = 0x63C0; // See ISO 7816-4 section 7.5.1
 
@@ -36,8 +38,26 @@ public class CryptoKey extends Applet implements ISO7816
 	/** Applet usage is terminated. */
 	private static final byte APP_STATE_TERMINATED      = (byte) 0x0C;
 	
-	
+	/** "CryptoKey" */
+	private static final byte[] APPLET_LABEL = {
+		(byte)'C', (byte)'r', (byte)'y', (byte)'p', (byte)'t', (byte)'o', (byte)'K', (byte)'e', (byte)'y'
+	};
 
+	/** "InterGalaxy" */
+	private static final byte[] MANUFACTURER_LABEL = {
+		(byte)'I', (byte)'n', (byte)'t', (byte)'e', (byte)'r', (byte)'G', (byte)'a', (byte)'l', (byte)'a', (byte)'x', (byte)'y'
+	};
+	
+	/** "eSIMity" */
+	private static final byte[] MODEL_LABEL = {
+		(byte)'e', (byte)'S', (byte)'I', (byte)'M', (byte)'i', (byte)'t', (byte)'y'
+	};
+
+	/** 31121985 */
+	private static final byte[] SERIAL_NUMBER = {(byte)'3', (byte)'1', (byte)'1', (byte)'2',(byte)'1', (byte)'9', (byte)'8', (byte)'5'};
+
+	private static final byte API_VERSION_MAJOR = (byte)0x00;
+	private static final byte API_VERSION_MINOR = (byte)0x01;
 
 	private byte appletState;
 	private OwnerPIN pin = null;
@@ -81,7 +101,9 @@ public class CryptoKey extends Applet implements ISO7816
 			case INS_RESET_RETRY_COUNTER: {
 				resetRetryCounter(apdu);
 			} break;
-			default: {
+			case INS_GET_DATA: {
+				getData(apdu);
+			} default: {
 				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 			}
 		}
@@ -306,5 +328,38 @@ public class CryptoKey extends Applet implements ISO7816
 		// Committing commmon case for P1=0 and P1=1: reset and unblock PIN
 		pin.resetAndUnblock();
 		appletState = APP_STATE_ACTIVATED;
+	}
+	
+	/**
+	 * GET DATA apdu (INS = CA), ISO 7816-4, clause 11.4.3.
+	 * Available values:
+	 * P1P2 == 00FF: retrieve all data
+	 */
+	private void
+	getData(APDU apdu)
+	{
+		byte[] buf = apdu.getBuffer();
+		short p1p2 = (short)(((short)buf[ISO7816.OFFSET_P1] << (short)8) | (short)((short)buf[ISO7816.OFFSET_P2] & (short)0x00FF));
+		short offset = OFFSET_CDATA;
+
+		switch (p1p2) {
+			case (short)0x00FF: {
+
+				buf[offset++] = appletState;
+				buf[offset++] = API_VERSION_MAJOR;
+				buf[offset++] = API_VERSION_MINOR;
+				buf[offset++] = PIN_MIN_LENGTH;
+				buf[offset++] = PIN_MAX_LENGTH;
+
+				offset = Util.arrayCopyNonAtomic(MANUFACTURER_LABEL, (short)0, buf, offset, offset);
+				offset = Util.arrayCopyNonAtomic(APPLET_LABEL, (short)0, buf, offset, offset);
+				offset = Util.arrayCopyNonAtomic(MODEL_LABEL, (short)0, buf, offset, offset);
+				offset = Util.arrayCopyNonAtomic(SERIAL_NUMBER, (short)0, buf, offset, offset);
+
+			} break;
+			default: ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
+		}
+
+		apdu.setOutgoingAndSend((short)OFFSET_CDATA, (short)(offset - OFFSET_CDATA));
 	}
 }
