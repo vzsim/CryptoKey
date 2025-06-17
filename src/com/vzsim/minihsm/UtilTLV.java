@@ -5,7 +5,7 @@ public class UtilTLV
 	protected static byte
 	tlvGetLen(byte[] buff, final short start, final short length, final byte tag)
 	{
-		for (short off = start; off < length; ++off) {
+		for (short off = start; off < (short)(start + length); ++off) {
 			if (buff[off] == tag) {
 				return buff[++off];
 			}
@@ -19,7 +19,7 @@ public class UtilTLV
 	protected static short
 	tlvGetValue(byte[] buff, final short start, final short length, final byte tag)
 	{
-		for (short off = start; off < length; ++off) {
+		for (short off = start; off < (short)(start + length); ++off) {
 			if (buff[off] == tag) {
 				return (short)(off + (short)2);
 			}

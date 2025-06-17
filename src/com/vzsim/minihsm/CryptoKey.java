@@ -103,7 +103,8 @@ public class CryptoKey extends Applet implements ISO7816
 			} break;
 			case INS_GET_DATA: {
 				getData(apdu);
-			} default: {
+			} break;
+			default: {
 				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
 			}
 		}
@@ -351,15 +352,15 @@ public class CryptoKey extends Applet implements ISO7816
 				buf[offset++] = PIN_MIN_LENGTH;
 				buf[offset++] = PIN_MAX_LENGTH;
 
-				offset = Util.arrayCopyNonAtomic(MANUFACTURER_LABEL, (short)0, buf, offset, offset);
-				offset = Util.arrayCopyNonAtomic(APPLET_LABEL, (short)0, buf, offset, offset);
-				offset = Util.arrayCopyNonAtomic(MODEL_LABEL, (short)0, buf, offset, offset);
-				offset = Util.arrayCopyNonAtomic(SERIAL_NUMBER, (short)0, buf, offset, offset);
+				offset = Util.arrayCopyNonAtomic(MANUFACTURER_LABEL, (short)0, buf, offset, (short)MANUFACTURER_LABEL.length);
+				offset = Util.arrayCopyNonAtomic(APPLET_LABEL, (short)0, buf, offset, (short)APPLET_LABEL.length);
+				offset = Util.arrayCopyNonAtomic(MODEL_LABEL, (short)0, buf, offset, (short)MODEL_LABEL.length);
+				offset = Util.arrayCopyNonAtomic(SERIAL_NUMBER, (short)0, buf, offset, (short)SERIAL_NUMBER.length);
 
 			} break;
 			default: ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
 		}
 
-		apdu.setOutgoingAndSend((short)OFFSET_CDATA, (short)(offset - OFFSET_CDATA));
+		apdu.setOutgoingAndSend((short)OFFSET_CDATA, offset);
 	}
 }
