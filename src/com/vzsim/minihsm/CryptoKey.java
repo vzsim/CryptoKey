@@ -15,7 +15,8 @@ public class CryptoKey extends Applet implements ISO7816
 	private static final byte INS_RESET_RETRY_COUNTER   = (byte) 0x2D;
 	private static final byte INS_GET_DATA				= (byte) 0xCA;
 
-	private static final short SW_PIN_TRIES_REMAINING   = 0x63C0; // See ISO 7816-4 section 7.5.1
+	private static final short SW_PIN_TRIES_REMAINING      = (short)0x63C0; // See ISO 7816-4 section 7.5.1
+	private static final short SW_ARRAY_INDEX_OUT_OF_RANGE = (short)0x6703;
 
 	private static final boolean PUK_MUST_BE_SET        = false;
 	private static final byte PIN_MAX_TRIES             = (byte) 0x03;
@@ -24,10 +25,10 @@ public class CryptoKey extends Applet implements ISO7816
 	private static final byte PIN_MAX_LENGTH            = (byte) 0x10;
 	
 	/** No restrictions */
-	private static final byte APP_STATE_CREATION        = (byte) 0x00;
+	private static final byte APP_STATE_CREATION        = (byte) 0x01;
 	
 	/** PUK set, but PIN not set yet. */
-	private static final byte APP_STATE_INITIALIZATION  = (byte) 0x01;
+	private static final byte APP_STATE_INITIALIZATION  = (byte) 0x02;
 
 	/** PIN is set. data is secured. */
 	private static final byte APP_STATE_ACTIVATED       = (byte) 0x05;
@@ -40,21 +41,21 @@ public class CryptoKey extends Applet implements ISO7816
 	
 	/** "CryptoKey" */
 	private static final byte[] APPLET_LABEL = {
-		(byte)'C', (byte)'r', (byte)'y', (byte)'p', (byte)'t', (byte)'o', (byte)'K', (byte)'e', (byte)'y'
+		(byte)0x09, (byte)'C', (byte)'r', (byte)'y', (byte)'p', (byte)'t', (byte)'o', (byte)'K', (byte)'e', (byte)'y'
 	};
 
 	/** "InterGalaxy" */
 	private static final byte[] MANUFACTURER_LABEL = {
-		(byte)'I', (byte)'n', (byte)'t', (byte)'e', (byte)'r', (byte)'G', (byte)'a', (byte)'l', (byte)'a', (byte)'x', (byte)'y'
+		(byte)0x0B, (byte)'I', (byte)'n', (byte)'t', (byte)'e', (byte)'r', (byte)'G', (byte)'a', (byte)'l', (byte)'a', (byte)'x', (byte)'y'
 	};
 	
 	/** "eSIMity" */
 	private static final byte[] MODEL_LABEL = {
-		(byte)'e', (byte)'S', (byte)'I', (byte)'M', (byte)'i', (byte)'t', (byte)'y'
+		(byte)0x07, (byte)'e', (byte)'S', (byte)'I', (byte)'M', (byte)'i', (byte)'t', (byte)'y'
 	};
 
 	/** 31121985 */
-	private static final byte[] SERIAL_NUMBER = {(byte)'3', (byte)'1', (byte)'1', (byte)'2',(byte)'1', (byte)'9', (byte)'8', (byte)'5'};
+	private static final byte[] SERIAL_NUMBER = {(byte)0x08, (byte)'3', (byte)'1', (byte)'1', (byte)'2',(byte)'1', (byte)'9', (byte)'8', (byte)'5'};
 
 	private static final byte API_VERSION_MAJOR = (byte)0x00;
 	private static final byte API_VERSION_MINOR = (byte)0x01;
@@ -90,23 +91,27 @@ public class CryptoKey extends Applet implements ISO7816
 		if (appletState == APP_STATE_TERMINATED) {
 			ISOException.throwIt((short)(SW_UNKNOWN | APP_STATE_TERMINATED));
 		}
-
-		switch (ins) {
-			case INS_CHANGE_REFERENCE_DATA: {
-				changeReferenceData(apdu);
-			} break;
-			case INS_VERIFY: {
-				verify(apdu);
-			} break;
-			case INS_RESET_RETRY_COUNTER: {
-				resetRetryCounter(apdu);
-			} break;
-			case INS_GET_DATA: {
-				getData(apdu);
-			} break;
-			default: {
-				ISOException.throwIt(SW_INS_NOT_SUPPORTED);
+		
+		try {
+			switch (ins) {
+				case INS_CHANGE_REFERENCE_DATA: {
+					changeReferenceData(apdu);
+				} break;
+				case INS_VERIFY: {
+					verify(apdu);
+				} break;
+				case INS_RESET_RETRY_COUNTER: {
+					resetRetryCounter(apdu);
+				} break;
+				case INS_GET_DATA: {
+					getData(apdu);
+				} break;
+				default: {
+					ISOException.throwIt(SW_ARRAY_INDEX_OUT_OF_RANGE);
+				}
 			}
+		} catch (ArrayIndexOutOfBoundsException e) {
+			ISOException.throwIt(SW_DATA_INVALID);
 		}
 	}
 
@@ -361,6 +366,6 @@ public class CryptoKey extends Applet implements ISO7816
 			default: ISOException.throwIt(ISO7816.SW_INCORRECT_P1P2);
 		}
 
-		apdu.setOutgoingAndSend((short)OFFSET_CDATA, offset);
+		apdu.setOutgoingAndSend((short)OFFSET_CDATA, (short)(offset - OFFSET_CDATA));
 	}
 }
